@@ -3,15 +3,10 @@ receivers:
     protocols:
       thrift_http:
         endpoint: "localhost:14268"
-  zipkin:
-    endpoint: "localhost:9411"
 
 exporters:
   opencensus:
     endpoint: "localhost:56565"
-  zipkin:
-    url: "http://localhost:9411/api/v2/spans"
-    format: "json"
 
 processors:
   queued_retry:
@@ -36,6 +31,6 @@ processors:
 service:
   pipelines:
     traces:
-      receivers: [jaeger,zipkin]
+      receivers: [jaeger]
       processors: [attributes,queued_retry]
-      exporters: [opencensus,zipkin]
+      exporters: [opencensus]

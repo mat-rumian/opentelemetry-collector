@@ -49,7 +49,6 @@ func TestJaegerGeneratorAndBackend(t *testing.T) {
 	assert.Equal(t, lg.DataItemsSent(), mb.DataItemsReceived())
 }
 
-
 func TestZipkinGeneratorAndBackend(t *testing.T) {
 
 	port := GetAvailablePort(t)
@@ -57,13 +56,13 @@ func TestZipkinGeneratorAndBackend(t *testing.T) {
 
 	assert.EqualValues(t, 0, zipkinBackend.DataItemsReceived())
 
-	Err := zipkinBackend.Start()
-	require.NoError(t, Err, "Cannot start Zipkin backend")
+	err := zipkinBackend.Start()
+	require.NoError(t, err, "Cannot start Zipkin backend")
 
 	defer zipkinBackend.Stop()
 
-	zipkinLoadGenerator, Err := NewLoadGenerator(NewZipkinDataSender(port))
-	require.NoError(t, Err, "Cannot start Zipkin load generator")
+	zipkinLoadGenerator, err := NewLoadGenerator(NewZipkinDataSender(port))
+	require.NoError(t, err, "Cannot start Zipkin load generator")
 
 	assert.EqualValues(t, 0, zipkinLoadGenerator.dataItemsSent)
 

@@ -5,16 +5,12 @@ receivers:
         endpoint: "localhost:14268"
   opencensus:
     endpoint: "localhost:55678"
-  zipkin:
-    endpoint: "localhost:9411"
+
 exporters:
   opencensus:
     endpoint: "localhost:56565"
   logging:
     loglevel: info
-  zipkin:
-    url: "http://localhost:9411/api/v2/spans"
-    format: "json"
 
 processors:
   queued_retry:
@@ -22,9 +18,9 @@ processors:
 service:
   pipelines:
     traces:
-      receivers: [jaeger,zipkin]
+      receivers: [jaeger]
       processors: [queued_retry]
-      exporters: [opencensus,logging,zipkin]
+      exporters: [opencensus,logging]
     metrics:
       receivers: [opencensus]
       exporters: [opencensus,logging]

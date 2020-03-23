@@ -367,7 +367,7 @@ func (zs *ZipkinDataSender) Start() error {
 	spansUrl := fmt.Sprintf("http://localhost:%d/api/v2/spans", zs.Port)
 
 	cfg := &zipkinexporter.Config{
-		URL:     spansUrl,
+		URL:    spansUrl,
 		Format: "json",
 	}
 
