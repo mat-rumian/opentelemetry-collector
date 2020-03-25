@@ -21,61 +21,54 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestJaegerGeneratorAndBackend(t *testing.T) {
+func TestGeneratorAndBackend(t *testing.T) {
 	port := GetAvailablePort(t)
-	mb := NewMockBackend("jaeger-mockbackend.log", NewJaegerDataReceiver(port))
 
-	assert.EqualValues(t, 0, mb.DataItemsReceived())
+	tests := []struct {
+		name     string
+		receiver DataReceiver
+		sender   DataSender
+	}{
+		{
+			"Jaeger-JaegerThrift",
+			NewJaegerDataReceiver(port),
+			NewJaegerThriftDataSender(port),
+		},
+		{
+			"Zipkin-Zipkin",
+			NewZipkinDataReceiver(port),
+			NewZipkinDataSender(port),
+		},
+	}
 
-	err := mb.Start()
-	require.NoError(t, err, "Cannot start backend")
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			mb := NewMockBackend("mockbackend.log", test.receiver)
 
-	defer mb.Stop()
+			assert.EqualValues(t, 0, mb.DataItemsReceived())
 
-	lg, err := NewLoadGenerator(NewJaegerThriftDataSender(port))
-	require.NoError(t, err, "Cannot start load generator")
+			err := mb.Start()
+			require.NoError(t, err, "Cannot start backend")
 
-	assert.EqualValues(t, 0, lg.dataItemsSent)
+			defer mb.Stop()
 
-	// Generate at 1000 SPS
-	lg.Start(LoadOptions{DataItemsPerSecond: 1000})
+			lg, err := NewLoadGenerator(test.sender)
+			require.NoError(t, err, "Cannot start load generator")
 
-	// Wait until at least 50 spans are sent
-	WaitFor(t, func() bool { return lg.DataItemsSent() > 50 }, "DataItemsSent > 50")
+			assert.EqualValues(t, 0, lg.dataItemsSent)
 
-	lg.Stop()
+			// Generate at 1000 SPS
+			lg.Start(LoadOptions{DataItemsPerSecond: 1000})
 
-	// The backend should receive everything generated.
-	assert.Equal(t, lg.DataItemsSent(), mb.DataItemsReceived())
-}
+			// Wait until at least 50 spans are sent
+			WaitFor(t, func() bool { return lg.DataItemsSent() > 50 }, "DataItemsSent > 50")
 
-func TestZipkinGeneratorAndBackend(t *testing.T) {
+			lg.Stop()
 
-	port := GetAvailablePort(t)
-	zipkinBackend := NewMockBackend("zipkin-mockbackend.log", NewZipkinDataReceiver(port))
-
-	assert.EqualValues(t, 0, zipkinBackend.DataItemsReceived())
-
-	err := zipkinBackend.Start()
-	require.NoError(t, err, "Cannot start Zipkin backend")
-
-	defer zipkinBackend.Stop()
-
-	zipkinLoadGenerator, err := NewLoadGenerator(NewZipkinDataSender(port))
-	require.NoError(t, err, "Cannot start Zipkin load generator")
-
-	assert.EqualValues(t, 0, zipkinLoadGenerator.dataItemsSent)
-
-	// Generate at 1000 SPS
-	zipkinLoadGenerator.Start(LoadOptions{DataItemsPerSecond: 1000})
-
-	// Wait until at least 50 spans are sent
-	WaitFor(t, func() bool { return zipkinLoadGenerator.DataItemsSent() > 50 }, "DataItemsSent > 50")
-
-	zipkinLoadGenerator.Stop()
-
-	// The backend should receive everything generated.
-	assert.Equal(t, zipkinLoadGenerator.DataItemsSent(), zipkinBackend.DataItemsReceived())
+			// The backend should receive everything generated.
+			assert.Equal(t, lg.DataItemsSent(), mb.DataItemsReceived())
+		})
+	}
 }
 
 // WaitFor the specific condition for up to 10 seconds. Records a test error
